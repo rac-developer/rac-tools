@@ -74,3 +74,5 @@ $RECYCLE.BIN/
 # Project Specific & Local Configs
 .config/
 *.omnifloat_config.json
+
+.config

@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=OmniFloat
+GenericName=Lanzador Flotante
+Comment=Lanzador flotante minimalista estilo Spotlight / Raycast para búsqueda de aplicaciones, cálculos y web
+Exec=omnifloat
+Icon=omnifloat
+Terminal=false
+Categories=Utility;System;DesktopUtility;
+StartupNotify=false
+Keywords=launcher;spotlight;raycast;calculator;search;float;

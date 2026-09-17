@@ -238,11 +238,12 @@ class LauncherWindow(QWidget):
         self.show()
         self.raise_()
         self.activateWindow()
-        try:
-            import ctypes
-            ctypes.windll.user32.SetForegroundWindow(int(self.winId()))
-        except Exception:
-            pass
+        if sys.platform == "win32":
+            try:
+                import ctypes
+                ctypes.windll.user32.SetForegroundWindow(int(self.winId()))
+            except Exception:
+                pass
         current_text = self.search_input.text()
         self.on_text_changed(current_text)
         self.position_top_third()

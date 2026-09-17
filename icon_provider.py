@@ -1,7 +1,17 @@
 import os
 import re
+import sys
 import shutil
-import winreg
+import subprocess
+
+if sys.platform == "win32":
+    try:
+        import winreg
+    except ImportError:
+        winreg = None
+else:
+    winreg = None
+
 from PySide6.QtCore import Qt, QFileInfo
 from PySide6.QtGui import QIcon, QPixmap, QPainter, QColor, QFont, QPen
 from PySide6.QtWidgets import QFileIconProvider
@@ -9,7 +19,7 @@ from PySide6.QtWidgets import QFileIconProvider
 class IconManager:
     """
     Manages and caches application, browser, and utility icons.
-    Automatically identifies the system's default browser from the Windows Registry.
+    Automatically identifies the system's default browser from the Windows Registry or Linux XDG.
     """
     _instance = None
 
@@ -27,6 +37,9 @@ class IconManager:
 
     def get_default_browser_exe(self) -> str | None:
         """Finds the default browser executable from Windows UserChoice registry association."""
+        if not winreg:
+            return None
+
         # 1. Official Windows UserChoice for HTTP associations
         try:
             with winreg.OpenKey(
@@ -66,15 +79,67 @@ class IconManager:
 
         return None
 
+    def get_linux_default_browser_icon(self) -> QIcon | None:
+        """Detects the default browser in Linux via xdg-settings / mimeapps.list and loads its themed icon."""
+        desktop_id = None
+        # Try xdg-settings
+        if shutil.which("xdg-settings"):
+            try:
+                out = subprocess.check_output(
+                    ["xdg-settings", "get", "default-web-browser"],
+                    stderr=subprocess.DEVNULL,
+                    text=True,
+                    timeout=1
+                ).strip()
+                if out and out.endswith(".desktop"):
+                    desktop_id = out
+            except Exception:
+                pass
+
+        # Fallback to ~/.config/mimeapps.list
+        if not desktop_id:
+            mime_path = os.path.expanduser("~/.config/mimeapps.list")
+            if os.path.exists(mime_path):
+                try:
+                    with open(mime_path, "r", encoding="utf-8", errors="ignore") as f:
+                        for line in f:
+                            if line.startswith(("x-scheme-handler/http=", "x-scheme-handler/https=", "text/html=")):
+                                val = line.split("=", 1)[1].strip().split(";")[0]
+                                if val.endswith(".desktop"):
+                                    desktop_id = val
+                                    break
+                except Exception:
+                    pass
+
+        if desktop_id:
+            icon_name = desktop_id.replace(".desktop", "")
+            icon = QIcon.fromTheme(icon_name)
+            if not icon.isNull():
+                return icon
+
+        # Generic XDG browser theme icon
+        for generic in ["web-browser", "browser", "internet-web-browser"]:
+            icon = QIcon.fromTheme(generic)
+            if not icon.isNull():
+                return icon
+
+        return None
+
     def get_default_browser_icon(self) -> QIcon:
-        """Returns the cached icon of the Windows default browser."""
+        """Returns the cached icon of the system's default browser."""
         if self._default_browser_icon and not self._default_browser_icon.isNull():
             return self._default_browser_icon
 
-        exe = self.get_default_browser_exe()
-        if exe:
-            icon = self._provider.icon(QFileInfo(exe))
-            if not icon.isNull():
+        if sys.platform == "win32":
+            exe = self.get_default_browser_exe()
+            if exe:
+                icon = self._provider.icon(QFileInfo(exe))
+                if not icon.isNull():
+                    self._default_browser_icon = icon
+                    return self._default_browser_icon
+        else:
+            icon = self.get_linux_default_browser_icon()
+            if icon and not icon.isNull():
                 self._default_browser_icon = icon
                 return self._default_browser_icon
 
@@ -127,6 +192,19 @@ class IconManager:
         if action in self._cache:
             return self._cache[action]
 
+        # 1. If explicit icon name or path was indexed (e.g. from Linux .desktop)
+        if getattr(item, "icon_path", None):
+            theme_icon = QIcon.fromTheme(item.icon_path)
+            if not theme_icon.isNull():
+                self._cache[action] = theme_icon
+                return theme_icon
+            if os.path.exists(item.icon_path):
+                file_icon = QIcon(item.icon_path)
+                if not file_icon.isNull():
+                    self._cache[action] = file_icon
+                    return file_icon
+
+        # 2. File or binary target
         target_path = action
         if not os.path.exists(target_path):
             resolved = shutil.which(target_path)

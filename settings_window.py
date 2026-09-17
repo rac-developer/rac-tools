@@ -1,4 +1,5 @@
 import os
+import sys
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QTabWidget, QWidget, QLabel,
@@ -33,8 +34,23 @@ class SettingsWindow(QDialog):
         self.hotkey_input = QLineEdit()
         gen_layout.addWidget(self.hotkey_input)
 
-        self.autostart_checkbox = QCheckBox("Iniciar OmniFloat con Windows")
+        os_label = "Windows" if sys.platform == "win32" else "el sistema (Linux)"
+        self.autostart_checkbox = QCheckBox(f"Iniciar OmniFloat automáticamente al encender {os_label}")
         gen_layout.addWidget(self.autostart_checkbox)
+
+        self.btn_create_shortcut = QPushButton("🖥️ Crear acceso directo en el Escritorio")
+        self.btn_create_shortcut.clicked.connect(self.create_desktop_shortcut_action)
+        gen_layout.addWidget(self.btn_create_shortcut)
+
+        if sys.platform != "win32":
+            hint_label = QLabel(
+                "💡 <i>Tip en Linux / Wayland:</i> Puedes asignar el comando <code>omnifloat --toggle</code> "
+                "a cualquier combinación de teclas en los Ajustes de Teclado de tu escritorio (GNOME, KDE, XFCE, i3, Sway)."
+            )
+            hint_label.setWordWrap(True)
+            hint_label.setStyleSheet("color: #9CA3AF; font-size: 11px; margin-top: 8px;")
+            gen_layout.addWidget(hint_label)
+
         gen_layout.addStretch()
 
         self.tabs.addTab(self.tab_general, "General")
@@ -140,3 +156,18 @@ class SettingsWindow(QDialog):
         self.indexer.reindex()
         self.settings_changed.emit()
         self.accept()
+
+    def create_desktop_shortcut_action(self):
+        try:
+            from install_shortcuts import create_desktop_shortcut
+            created = create_desktop_shortcut()
+            if created:
+                QMessageBox.information(
+                    self,
+                    "Acceso Directo Creado",
+                    f"¡Acceso directo creado exitosamente en tu Escritorio!\n\n{created[0]}"
+                )
+            else:
+                QMessageBox.warning(self, "Acceso Directo", "No se pudo crear el acceso directo.")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Error al crear el acceso directo: {e}")

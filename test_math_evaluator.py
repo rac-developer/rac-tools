@@ -18,6 +18,21 @@ class TestMathEvaluator(unittest.TestCase):
         self.assertEqual(evaluate_expression("abs(-42)"), "42")
         self.assertEqual(evaluate_expression("round(pi, 2)"), "3.14")
 
+    def test_percentages(self):
+        self.assertEqual(evaluate_expression("100 + 20%"), "120")
+        self.assertEqual(evaluate_expression("100 - 20%"), "80")
+        self.assertEqual(evaluate_expression("500 + 15%"), "575")
+        self.assertEqual(evaluate_expression("200 - 15%"), "170")
+        self.assertEqual(evaluate_expression("20% of 500"), "100")
+        self.assertEqual(evaluate_expression("20% de 500"), "100")
+        self.assertEqual(evaluate_expression("15% de 80"), "12")
+        self.assertEqual(evaluate_expression("50 * 20%"), "10")
+        self.assertEqual(evaluate_expression("20% * 500"), "100")
+        self.assertEqual(evaluate_expression("50 / 10%"), "500")
+        self.assertEqual(evaluate_expression("25%"), "0.25")
+        self.assertEqual(evaluate_expression("100 + 10% + 10%"), "121")
+        self.assertEqual(evaluate_expression("¿cuánto es el 15% de 80?"), "12")
+
     def test_invalid_or_unsafe(self):
         self.assertIsNone(evaluate_expression("2 +"))
         self.assertIsNone(evaluate_expression("__import__('os').system('dir')"))

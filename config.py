@@ -8,7 +8,7 @@ DEFAULT_CONFIG = {
     "autostart": False,
     "search_paths": [],
     "theme": "Dark",
-    "opacity": 0.95
+    "opacity": 1.0
 }
 
 CONFIG_FILE_PATH = os.path.join(os.path.expanduser("~"), ".omnifloat_config.json")

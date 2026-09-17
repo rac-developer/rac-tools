@@ -22,16 +22,15 @@ class SystemTrayManager(QObject):
         painter = QPainter(pixmap)
         painter.setRenderHint(QPainter.Antialiasing)
 
-        # Draw circle background
-        painter.setBrush(QColor(189, 147, 249))  # Purple tint
+        # Draw dark circle background with crisp border
+        painter.setBrush(QColor(20, 20, 22))
         painter.setPen(QColor(255, 255, 255))
         painter.drawEllipse(2, 2, 28, 28)
 
         # Draw inner 'O' symbol
-        painter.setPen(QColor(26, 27, 35))
+        painter.setPen(QColor(255, 255, 255))
         painter.setBrush(QColor(0, 0, 0, 0))
-        painter.setPen(QColor(26, 27, 35))
-        painter.drawEllipse(8, 8, 16, 16)
+        painter.drawEllipse(9, 9, 14, 14)
 
         painter.end()
         return QIcon(pixmap)
